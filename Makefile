@@ -28,3 +28,6 @@ typecheck:
 
 test:
 	uv run --locked pytest
+
+run:
+	uv run dev-assistant

@@ -7,14 +7,20 @@ authors = [
     { name = "Bartłomiej Miłosz", email = "bartlomiej.milosz@gmail.com" }
 ]
 requires-python = ">=3.14"
-dependencies = []
+dependencies = [
+    "httpx2>=2.16.0",
+]
 
 [project.scripts]
-dev-assistant = "dev_assistant:main"
+dev-assistant = "dev_assistant.cli:main"
 
 [build-system]
 requires = ["uv_build>=0.13.7,<0.14.0"]
 build-backend = "uv_build"
+
+dependencies = [
+    "httpx2>=2.16.0",
+]
 
 [dependency-groups]
 dev = [
