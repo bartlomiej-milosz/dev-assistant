@@ -1,32 +1,17 @@
-# Python-generated files
-__pycache__/
-*.py[oc]
-build/
-dist/
-wheels/
-*.egg-info
-
-# Virtual environments
-.venv
-
-# Documentation 
-docs/
-
-# Local configuration and secrets
+/.venv/
+/notes/
+/data/
+/sources.toml
 .env
 .env.*
 !.env.example
-
-# Tool and test artifacts
-.vscode/
+__pycache__/
+*.py[cod]
+*.egg-info/
+/dist/
+/build/
 .pytest_cache/
 .ruff_cache/
 .ty_cache/
-.coverage
-.coverage.*
-htmlcov/
-coverage.xml
-*.log
-
-# macOS Finder metadata in any directory
+.ipynb_checkpoints/
 .DS_Store

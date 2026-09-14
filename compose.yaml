@@ -1,0 +1,8 @@
+services:
+  cli:
+    build: .
+    volumes:
+      - ./sources.toml:/app/sources.toml:ro
+      - index-data:/app/data
+volumes:
+  index-data:
