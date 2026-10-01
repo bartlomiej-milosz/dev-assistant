@@ -1,5 +1,7 @@
 FROM ghcr.io/astral-sh/uv:0.13.7 AS uv
-FROM python:3.14-slim AS build
+FROM python:3.14-slim AS base
+RUN apt-get update && apt-get install -y --no-install-recommends git ca-certificates && rm -rf /var/lib/apt/lists/*
+FROM base AS build
 COPY --from=uv /uv /usr/local/bin/uv
 WORKDIR /app
 ENV UV_LINK_MODE=copy UV_PYTHON_DOWNLOADS=never
@@ -15,10 +17,9 @@ RUN uv sync --locked --no-editable \
     && uv run --locked --no-sync ty check src tests \
     && uv run --locked --no-sync pytest -q
 
-FROM python:3.14-slim AS runtime
+FROM base AS runtime
 WORKDIR /app
 COPY --from=build /app/.venv /app/.venv
-RUN mkdir -p /app/data && chown 10001:10001 /app/data
 ENV PATH="/app/.venv/bin:${PATH}"
 USER 10001:10001
 ENTRYPOINT ["dev-assistant"]

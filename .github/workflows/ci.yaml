@@ -10,10 +10,15 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
-      - name: Verify Python package
-        run: docker build --target checks .
-      - name: Build and smoke-test the CLI
+      - name: Check package and unit tests
+        run: docker build --target checks -t dev-assistant-checks .
+      - name: Start database and exercise packaged CLI
         run: |
-          make init-config
+          make db build smoke
           docker compose config --quiet
-          make build smoke
+      - name: Run PostgreSQL integration tests
+        run: |
+          docker run --rm --network host --env-file .env -e RUN_DB_TESTS=1 dev-assistant-checks /app/.venv/bin/pytest -q
+      - name: Stop CI database
+        if: always()
+        run: docker compose down -v
