@@ -10,6 +10,7 @@ COPY src ./src
 RUN uv sync --locked --no-dev --no-editable
 
 FROM build AS checks
+ENV PATH="/app/.venv/bin:${PATH}"
 COPY tests ./tests
 RUN uv sync --locked --no-editable \
     && uv run --locked --no-sync ruff format --check src tests \

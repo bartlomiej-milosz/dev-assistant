@@ -64,3 +64,30 @@ def test_failed_write_keeps_exact_previous_state(engine):
     with engine.connect() as conn:
         assert current(conn) == STATE
         assert search(conn, "", VECS[0]) == [A, B]
+
+
+def test_reader_sees_one_commit_across_concurrent_publication(engine):
+    replace(engine, STATE, [A], [VECS[0]])
+    with engine.connect().execution_options(isolation_level="REPEATABLE READ") as reader:
+        assert current(reader) == STATE
+        other = Snapshot(STATE.url, "b" * 40, STATE.model, 2)
+        replace(engine, other, [B], [VECS[1]])
+        assert search(reader, "", VECS[0]) == [A]
+    with engine.connect() as reader:
+        assert current(reader) == other
+        assert search(reader, "", VECS[0]) == [B]
+
+
+def test_query_rejects_embedding_model_drift(engine, monkeypatch):
+    from dev_assistant.model import Ollama
+    from dev_assistant.service import retrieve
+
+    replace(engine, STATE, [A], [VECS[0]])
+    model = Ollama()
+    try:
+        monkeypatch.setattr(model, "identity", lambda: "new-digest")
+        with pytest.raises(ValueError, match="differs"):
+            retrieve(engine, model, "stock", "vector")
+        assert retrieve(engine, model, "stock", "text")[1] == [A]
+    finally:
+        model.close()
