@@ -9,7 +9,7 @@
       "path": "src/main/resources/db/migration/V1__create_inventory_schema.sql",
       "lines": [
         53,
-        57
+        56
       ]
     },
     {
@@ -21,6 +21,98 @@
         143,
         160
       ]
+    },
+    {
+      "id": "identifier",
+      "split": "development",
+      "question": "What does stock_levels_valid_quantities enforce?",
+      "path": "src/main/resources/db/migration/V1__create_inventory_schema.sql",
+      "lines": [
+        53,
+        56
+      ]
+    },
+    {
+      "id": "normalize",
+      "split": "development",
+      "question": "What happens to whitespace and capitalization in an employee email address?",
+      "path": "src/main/java/dev/bartlomiejmilosz/inventory/users/EmailAddress.java",
+      "lines": [
+        8,
+        9
+      ]
+    },
+    {
+      "id": "empty-order",
+      "split": "held-out",
+      "question": "What happens if someone confirms a draft with no line items?",
+      "path": "src/main/java/dev/bartlomiejmilosz/inventory/orders/OrderService.java",
+      "lines": [
+        156,
+        160
+      ]
+    },
+    {
+      "id": "page",
+      "split": "held-out",
+      "question": "Which pagination fields does PageResponse return?",
+      "path": "src/main/java/dev/bartlomiejmilosz/inventory/shared/PageResponse.java",
+      "lines": [
+        6,
+        7
+      ]
+    },
+    {
+      "id": "runtime-user",
+      "split": "held-out",
+      "question": "Which numeric user and group run the packaged backend?",
+      "path": "Dockerfile",
+      "lines": [
+        18,
+        18
+      ]
+    },
+    {
+      "id": "movements",
+      "split": "held-out",
+      "question": "How does issuing reserved goods record the direction and sign of a stock movement?",
+      "path": "src/main/java/dev/bartlomiejmilosz/inventory/inventory/StockReservationService.java",
+      "lines": [
+        42,
+        45
+      ]
+    },
+    {
+      "id": "price",
+      "split": "held-out",
+      "question": "What precision and scale does the Product entity use for unit_price?",
+      "path": "src/main/java/dev/bartlomiejmilosz/inventory/catalog/Product.java",
+      "lines": [
+        19,
+        20
+      ]
+    },
+    {
+      "id": "bootstrap",
+      "split": "held-out",
+      "question": "What size limit applies to the bootstrap password file?",
+      "path": "src/main/java/dev/bartlomiejmilosz/inventory/users/AdminBootstrapRunner.java",
+      "lines": [
+        33,
+        36
+      ]
+    },
+    {
+      "id": "missing-traffic",
+      "split": "held-out",
+      "question": "How many real customer orders did production receive last Tuesday?",
+      "path": null
+    },
+    {
+      "id": "missing-backup",
+      "split": "held-out",
+      "question": "What was the UTC timestamp of the last successful production database backup?",
+      "path": null
     }
   ]
 }

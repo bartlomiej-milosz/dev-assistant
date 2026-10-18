@@ -29,7 +29,7 @@ def main() -> None:
     index.add_argument("--commit", help="Index an exact Git SHA for reproducible experiments")
     ask = commands.add_parser("ask", help="Answer one English question with cited evidence")
     ask.add_argument("question")
-    ask.add_argument("--method", choices=["text", "vector"], default="vector")
+    ask.add_argument("--method", choices=["text", "vector"], default="text")
     args = parser.parse_args()
     if args.command is None:
         parser.print_help()
