@@ -2,11 +2,12 @@
 
 import subprocess
 import sys
-from argparse import ArgumentParser
+from argparse import ArgumentParser, Namespace
 from contextlib import closing
 from importlib.metadata import version
 from pathlib import Path
 from time import monotonic
+from typing import Literal
 
 import httpx
 from dotenv import load_dotenv
@@ -16,6 +17,14 @@ from dev_assistant.corpus import Source
 from dev_assistant.model import Ollama
 from dev_assistant.service import retrieve, update
 from dev_assistant.storage import database
+
+
+class Arguments(Namespace):
+    command: Literal["update", "ask"] | None
+    config: Path
+    commit: str | None
+    question: str
+    method: Literal["text", "vector"]
 
 
 def main() -> None:
@@ -30,7 +39,7 @@ def main() -> None:
     ask = commands.add_parser("ask", help="Answer one English question with cited evidence")
     ask.add_argument("question")
     ask.add_argument("--method", choices=["text", "vector"], default="text")
-    args = parser.parse_args()
+    args = parser.parse_args(namespace=Arguments())
     if args.command is None:
         parser.print_help()
         return

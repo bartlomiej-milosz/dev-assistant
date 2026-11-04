@@ -4,12 +4,24 @@ import json
 import math
 import os
 from dataclasses import dataclass
+from typing import cast
 
 import httpx
 
 from dev_assistant.corpus import Passage
 
 MISSING = "The indexed passages do not contain enough evidence to answer this question."
+
+
+type JsonValue = None | bool | int | float | str | list[JsonValue] | dict[str, JsonValue]
+
+
+def _json_object(raw: str | bytes) -> dict[str, JsonValue]:
+    value: object = json.loads(raw)
+    if not isinstance(value, dict):
+        raise ValueError("Expected a JSON object from Ollama.")
+    # JSON decoding guarantees string keys and recursively JSON-compatible values.
+    return cast(dict[str, JsonValue], value)
 
 
 @dataclass(frozen=True)
@@ -20,9 +32,7 @@ class Answer:
 
 
 def validated_answer(raw: str, passages: list[Passage]) -> Answer:
-    result = json.loads(raw)
-    if not isinstance(result, dict):
-        raise ValueError("Expected a JSON answer object from Ollama.")
+    result = _json_object(raw)
     index, quote, answer = result.get("source"), result.get("quote"), result.get("answer")
     if type(index) is not int or not 1 <= index <= len(passages):
         return Answer(MISSING, None)
@@ -35,38 +45,63 @@ def validated_answer(raw: str, passages: list[Passage]) -> Answer:
 
 
 class Ollama:
-    def __init__(self):
+    def __init__(self) -> None:
         self.client = httpx.Client(
             base_url=os.getenv("OLLAMA_URL", "http://127.0.0.1:11434"), timeout=180, trust_env=False
         )
         self.embedding = os.getenv("EMBED_MODEL", "all-minilm")
         self.chat = os.getenv("CHAT_MODEL", "qwen3.5:9b")
 
-    def close(self):
+    def close(self) -> None:
         self.client.close()
 
-    def identity(self) -> str:
+    def model_tag(self, name: str) -> tuple[str, str]:
         response = self.client.get("/api/tags")
         response.raise_for_status()
-        for model in response.json()["models"]:
-            if model["name"] in (self.embedding, self.embedding + ":latest"):
-                return model["name"] + "@" + model["digest"]
-        raise ValueError(f"Install the local embedding model with: ollama pull {self.embedding}")
+        models = _json_object(response.content).get("models")
+        if not isinstance(models, list):
+            raise ValueError("Expected a list of installed Ollama models.")
+        for model in models:
+            if isinstance(model, dict):
+                tag, digest = model.get("name"), model.get("digest")
+                if (
+                    isinstance(tag, str)
+                    and tag in (name, name + ":latest")
+                    and isinstance(digest, str)
+                ):
+                    return tag, digest
+        raise ValueError(f"Install the local model with: ollama pull {name}")
+
+    def identity(self) -> str:
+        tag, digest = self.model_tag(self.embedding)
+        return f"{tag}@{digest}"
 
     def embed(self, inputs: list[str]) -> list[list[float]]:
-        vectors = []
+        vectors: list[list[float]] = []
         for offset in range(0, len(inputs), 16):
             batch = inputs[offset : offset + 16]
             response = self.client.post(
                 "/api/embed", json={"model": self.embedding, "input": batch}
             )
             response.raise_for_status()
-            result = response.json()["embeddings"]
-            if len(result) != len(batch) or any(
-                not v or not all(math.isfinite(x) for x in v) or not any(v) for v in result
-            ):
+            result = _json_object(response.content).get("embeddings")
+            if not isinstance(result, list) or len(result) != len(batch):
                 raise ValueError("Ollama returned incomplete or invalid embeddings.")
-            vectors.extend(result)
+            for row in result:
+                if not isinstance(row, list):
+                    raise ValueError("Expected a list of embedding coordinates.")
+                vector: list[float] = []
+                for value in row:
+                    if (
+                        isinstance(value, bool)
+                        or not isinstance(value, (int, float))
+                        or not math.isfinite(value)
+                    ):
+                        raise ValueError("Ollama returned invalid embeddings.")
+                    vector.append(float(value))
+                if not any(vector):
+                    raise ValueError("Ollama returned empty or zero embeddings.")
+                vectors.append(vector)
         return vectors
 
     def answer(self, question: str, passages: list[Passage]) -> Answer:
@@ -105,4 +140,8 @@ class Ollama:
             },
         )
         response.raise_for_status()
-        return validated_answer(response.json()["message"]["content"], passages)
+        message = _json_object(response.content).get("message")
+        content = message.get("content") if isinstance(message, dict) else None
+        if not isinstance(content, str):
+            raise ValueError("Expected a text message from Ollama.")
+        return validated_answer(content, passages)

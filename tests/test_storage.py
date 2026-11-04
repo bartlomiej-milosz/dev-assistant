@@ -1,9 +1,12 @@
 import os
+from collections.abc import Iterator
 from uuid import uuid4
 
 import pytest
-from sqlalchemy import event, text
+from sqlalchemy import Engine, event, text
+from sqlalchemy.engine.interfaces import DBAPIConnection
 from sqlalchemy.exc import IntegrityError
+from sqlalchemy.pool import ConnectionPoolEntry
 
 from dev_assistant.corpus import Passage
 from dev_assistant.storage import Snapshot, current, database, replace, search
@@ -14,7 +17,7 @@ pytestmark = pytest.mark.skipif(
 
 
 @pytest.fixture
-def engine():
+def engine() -> Iterator[Engine]:
     admin = database()
     schema = "test_" + uuid4().hex
     with admin.begin() as conn:
@@ -23,7 +26,7 @@ def engine():
     isolated = database()
 
     @event.listens_for(isolated, "connect")
-    def set_schema(raw, _):
+    def set_schema(raw: DBAPIConnection, _: ConnectionPoolEntry) -> None:
         cursor = raw.cursor()
         cursor.execute(f"SET search_path TO {schema}, public")
         raw.commit()
@@ -44,7 +47,7 @@ B = Passage("B.py", 1, 1, "normalize email")
 VECS = [[1.0, 0.0], [0.0, 1.0]]
 
 
-def test_real_cosine_keyword_and_replacement(engine):
+def test_real_cosine_keyword_and_replacement(engine: Engine) -> None:
     replace(engine, STATE, [A, B], VECS)
     with engine.connect() as conn:
         assert search(conn, "", VECS[1]) == [B, A]
@@ -56,7 +59,7 @@ def test_real_cosine_keyword_and_replacement(engine):
         assert current(conn) == STATE
 
 
-def test_failed_write_keeps_exact_previous_state(engine):
+def test_failed_write_keeps_exact_previous_state(engine: Engine) -> None:
     replace(engine, STATE, [A, B], VECS)
     other = Snapshot(STATE.url, "b" * 40, STATE.model, 2)
     with pytest.raises(IntegrityError):
@@ -66,7 +69,7 @@ def test_failed_write_keeps_exact_previous_state(engine):
         assert search(conn, "", VECS[0]) == [A, B]
 
 
-def test_reader_sees_one_commit_across_concurrent_publication(engine):
+def test_reader_sees_one_commit_across_concurrent_publication(engine: Engine) -> None:
     replace(engine, STATE, [A], [VECS[0]])
     with engine.connect().execution_options(isolation_level="REPEATABLE READ") as reader:
         assert current(reader) == STATE
@@ -78,7 +81,9 @@ def test_reader_sees_one_commit_across_concurrent_publication(engine):
         assert search(reader, "", VECS[0]) == [B]
 
 
-def test_query_rejects_embedding_model_drift(engine, monkeypatch):
+def test_query_rejects_embedding_model_drift(
+    engine: Engine, monkeypatch: pytest.MonkeyPatch
+) -> None:
     from dev_assistant.model import Ollama
     from dev_assistant.service import retrieve
 

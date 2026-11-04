@@ -3,10 +3,11 @@
 import re
 import subprocess
 import tomllib
-from collections.abc import Iterator
+from collections.abc import Iterator, Mapping
 from dataclasses import dataclass
 from pathlib import Path, PurePosixPath
 from tempfile import TemporaryDirectory
+from typing import cast
 from urllib.parse import quote
 
 SUFFIXES = {".java", ".py", ".sh", ".sql", ".md", ".toml", ".yaml", ".yml", ".xml", ".properties"}
@@ -26,7 +27,9 @@ class Source:
             row = tomllib.load(file).get("repository", {})
         if not isinstance(row, dict):
             raise ValueError("Expected a [repository] table.")
-        url, branch = row.get("url"), row.get("branch")
+        # TOML tables have string keys. Validate the values before building a Source.
+        fields = cast(Mapping[str, object], row)
+        url, branch = fields.get("url"), fields.get("branch")
         if not isinstance(url, str) or not re.fullmatch(
             r"https://github\.com/[\w.-]+/[\w.-]+", url
         ):

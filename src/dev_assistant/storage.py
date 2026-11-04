@@ -60,7 +60,7 @@ def replace(
 ) -> None:
     if not passages or len(passages) != len(vectors) or state.dimensions <= 0:
         raise ValueError("A complete, nonempty set of embeddings is required.")
-    rows = []
+    rows: list[dict[str, str | int]] = []
     for part, vector in zip(passages, vectors, strict=True):
         if len(vector) != state.dimensions or not any(vector):
             raise ValueError("Invalid embedding dimensions or zero vector.")

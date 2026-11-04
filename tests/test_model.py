@@ -1,22 +1,24 @@
+from collections.abc import Callable
+
 import httpx
 import pytest
 
 from dev_assistant.model import Ollama
 
 
-def mock_model(handler):
+def mock_model(handler: Callable[[httpx.Request], httpx.Response]) -> Ollama:
     model = Ollama()
     model.close()
     model.client = httpx.Client(transport=httpx.MockTransport(handler), base_url="http://test")
     return model
 
 
-def test_embeddings_batch_and_preserve_order():
+def test_embeddings_batch_and_preserve_order() -> None:
     import json
 
-    sizes = []
+    sizes: list[int] = []
 
-    def respond(request):
+    def respond(request: httpx.Request) -> httpx.Response:
         inputs = json.loads(request.content)["input"]
         sizes.append(len(inputs))
         return httpx.Response(200, json={"embeddings": [[1, int(s)] for s in inputs]})
@@ -29,8 +31,8 @@ def test_embeddings_batch_and_preserve_order():
         model.close()
 
 
-@pytest.mark.parametrize("vectors", [[], [[0, 0]], [[]]])
-def test_embedding_protocol_rejects_invalid_batch(vectors):
+@pytest.mark.parametrize("vectors", [[], [[0, 0]], [[]], [[False, True]], [["invalid"]]])
+def test_embedding_protocol_rejects_invalid_batch(vectors: list[list[int | str]]) -> None:
     model = mock_model(lambda _: httpx.Response(200, json={"embeddings": vectors}))
     try:
         with pytest.raises(ValueError, match="embeddings"):
@@ -39,8 +41,8 @@ def test_embedding_protocol_rejects_invalid_batch(vectors):
         model.close()
 
 
-def test_offline_ollama_is_an_operational_error():
-    def offline(_):
+def test_offline_ollama_is_an_operational_error() -> None:
+    def offline(_: httpx.Request) -> httpx.Response:
         raise httpx.ConnectError("offline")
 
     model = mock_model(offline)
