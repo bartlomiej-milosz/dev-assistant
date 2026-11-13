@@ -10,15 +10,26 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
-      - name: Check package and unit tests
-        run: docker build --target checks -t dev-assistant-checks .
+      - name: Install uv
+        uses: astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9 # v9.0.0
+        with:
+          version: "0.13.7"
+      - name: Install locked dependencies
+        run: make setup
+      - name: Check formatting with Ruff
+        run: make format-check
+      - name: Lint with Ruff
+        run: make lint
+      - name: Check types with ty
+        run: make typecheck
+      - name: Run unit tests
+        run: make test
       - name: Start database and exercise packaged CLI
         run: |
           make db build smoke
           docker compose config --quiet
       - name: Run PostgreSQL integration tests
-        run: |
-          docker run --rm --network host --env-file .env -e RUN_DB_TESTS=1 dev-assistant-checks /app/.venv/bin/pytest -q
+        run: make test-db
       - name: Stop CI database
         if: always()
         run: docker compose down -v

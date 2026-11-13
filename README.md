@@ -53,6 +53,8 @@ Select the project environment as the VS Code Jupyter kernel and run all cells. 
 
 ## Verification and configuration
 
-`make verify` runs Ruff formatting, lint, ty and pytest. `make test-db` includes integration tests in isolated schemas on real pgvector. Tests use deterministic vectors and stubbed model responses. The notebook exercises the actual models. GitHub Actions builds a checks image, starts a fresh database, runs integration tests and smoke-tests the packaged CLI.
+Run `make format` to apply Ruff formatting to `src/` and `tests/`. Run `make check` for the read-only checks, or use `make format-check`, `make lint` and `make typecheck` individually. `make verify` runs the static checks and unit tests.
+
+`make test-db` includes integration tests in isolated schemas on real pgvector. Tests use deterministic vectors and stubbed model responses. The notebook exercises the actual models. GitHub Actions runs the same formatting, lint and type checks on pushes and pull requests. It also runs unit tests, exercises the packaged CLI and runs integration tests against a fresh database.
 
 Keep the generated database password while its volume exists. The native CLI reads `.env` in the project root. To change the host port, set `DB_PORT` there before starting Compose. `EMBED_MODEL` defaults to `all-minilm`, `CHAT_MODEL` to `qwen3.5:9b`. A changed embedding model or digest requires another `update`. The verified chat model accepts structured JSON with thinking disabled. See [design and limits](docs/design.md) for the implementation decisions.

@@ -5,6 +5,7 @@ import subprocess
 import tomllib
 from collections.abc import Iterator, Mapping
 from dataclasses import dataclass
+from itertools import pairwise
 from pathlib import Path, PurePosixPath
 from tempfile import TemporaryDirectory
 from typing import cast
@@ -22,7 +23,7 @@ class Source:
     branch: str
 
     @classmethod
-    def read(cls, path: Path) -> "Source":
+    def read(cls, path: Path) -> Source:
         with path.open("rb") as file:
             row = tomllib.load(file).get("repository", {})
         if not isinstance(row, dict):
@@ -73,7 +74,7 @@ def chunks(path: str, content: str) -> Iterator[Passage]:
             elif i and not fence and re.match(r"^#{1,6}\s", line):
                 boundaries.append(i)
     boundaries.append(len(lines))
-    for left, right in zip(boundaries, boundaries[1:]):
+    for left, right in pairwise(boundaries):
         for i in range(left, right, WINDOW - OVERLAP):
             end = min(i + WINDOW, right)
             body = "\n".join(lines[i:end])
